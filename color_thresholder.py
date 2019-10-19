@@ -1,28 +1,35 @@
+# HSV: H -> 0 ~ 180 S
+
+
+
 from __future__ import print_function
 import cv2
 import argparse
+import numpy as np
+
 		
 parser = argparse.ArgumentParser(description='Code for Thresholding Operations using inRange tutorial.')
 parser.add_argument('--input', help='video or image')
 parser.add_argument('--path', help = 'source to input')
+parser.add_argument('color_space', metavar = '<color_space>', default = 'hsv', help = "'bgr' or 'hsv' or 'lab'")
 args = parser.parse_args()
 
 max_value = 255
-max_value_H = 360//2
+max_value_H = 255#360//2
 low_H = 0
 low_S = 0
 low_V = 0
 high_H = max_value_H
 high_S = max_value
 high_V = max_value
-window_capture_name = 'Video Capture'
-window_detection_name = 'Object Detection'
-low_H_name = 'Low H'
-low_S_name = 'Low S'
-low_V_name = 'Low V'
-high_H_name = 'High H'
-high_S_name = 'High S'
-high_V_name = 'High V'
+# window_capture_name = 'Video Capture'
+window_detection_name = 'Color Thresholder'
+low_H_name = 'Low H/L/B'
+low_S_name = 'Low S/a/G'
+low_V_name = 'Low V/b/R'
+high_H_name = 'High H/L/B'
+high_S_name = 'High S/a/G'
+high_V_name = 'High V/b/R'
 
 def on_low_H_thresh_trackbar(val):
 	global low_H
@@ -66,9 +73,22 @@ if args.input == 'video':
 elif args.input == 'image':
 	cap = cv2.imread(args.path)
 
+def Resize(img, pseudo_color, color_mask, img_threshold):
+	
+	h, w = img.shape[:2]
+
+	small_h, small_w = h//2, w//2
+
+	img_resize = cv2.resize(img, (small_w, small_h))
+	pseudo_color_resize = cv2.resize(pseudo_color, (small_w, small_h))
+	color_mask_resize = cv2.resize(color_mask, (small_w, small_h))
+	img_threshold_resize = cv2.resize(img_threshold, (small_w, small_h))
+
+
+	return img_resize, pseudo_color_resize, color_mask_resize, img_threshold_resize
 
 # cap = cv2.VideoCapture('outpy.avi')
-cv2.namedWindow(window_capture_name)
+# cv2.namedWindow(window_capture_name)
 cv2.namedWindow(window_detection_name)
 cv2.createTrackbar(low_H_name, window_detection_name , low_H, max_value_H, on_low_H_thresh_trackbar)
 cv2.createTrackbar(high_H_name, window_detection_name , high_H, max_value_H, on_high_H_thresh_trackbar)
@@ -76,6 +96,7 @@ cv2.createTrackbar(low_S_name, window_detection_name , low_S, max_value, on_low_
 cv2.createTrackbar(high_S_name, window_detection_name , high_S, max_value, on_high_S_thresh_trackbar)
 cv2.createTrackbar(low_V_name, window_detection_name , low_V, max_value, on_low_V_thresh_trackbar)
 cv2.createTrackbar(high_V_name, window_detection_name , high_V, max_value, on_high_V_thresh_trackbar)
+
 while True:
 
 	if args.input == 'video':
@@ -85,13 +106,30 @@ while True:
 
 	if frame is None:
 		break
-	frame_HSV = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+	if args.color_space == 'bgr': 
+		frame_HSV = frame
+	elif args.color_space == 'hsv':
+		frame_HSV = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+	elif args.color_space == 'lab':
+		frame_HSV = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+
 	frame_threshold = cv2.inRange(frame_HSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
 	
-	rgb_frame_threshold = cv2.merge((frame_threshold, frame_threshold,frame_threshold))
-	cv2.imshow(window_capture_name, frame)
-	cv2.imshow(window_detection_name, rgb_frame_threshold)
-	
+	rgb_frame_threshold = cv2.merge((frame_threshold, frame_threshold, frame_threshold))
+
+	res = cv2.bitwise_and(frame, frame, mask = frame_threshold)
+
+	frame_resize, frame_HSV_resize, res_resize, frame_threshold_resize = Resize(frame, frame_HSV, res, rgb_frame_threshold)
+
+	combine = np.vstack((np.hstack((frame_resize,frame_HSV_resize)), np.hstack((res_resize ,frame_threshold_resize))))
+	# cv2.imshow(window_capture_name, frame_resize)
+	cv2.imshow(window_detection_name, combine)
+
+	print('Color Space:', args.color_space)
+	print(low_H_name,':', low_H, ' ', high_H_name,':', high_H)
+	print(low_S_name,':', low_S, ' ', high_S_name,':', high_S)
+	print(low_V_name,':', low_V, ' ', high_V_name,':', high_V)
 	key = cv2.waitKey(500)
 	if key == ord('q') or key == 27:
 		break
