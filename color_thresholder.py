@@ -1,5 +1,9 @@
-# HSV: H -> 0 ~ 180 S
+# Author: Annie Wang
+# Date: 2019.10.18
 
+
+# Although h-channel in HSV is from 0 ~ 180
+# for convenience, still set max value to 255.
 
 
 from __future__ import print_function
