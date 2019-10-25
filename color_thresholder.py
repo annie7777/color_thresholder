@@ -15,6 +15,7 @@ import numpy as np
 parser = argparse.ArgumentParser(description='Code for Thresholding Operations using inRange tutorial.')
 parser.add_argument('--input', help='video or image')
 parser.add_argument('--path', help = 'source to input')
+parser.add_argument('--ratio', help = 'resize image to size//ratio')
 parser.add_argument('color_space', metavar = '<color_space>', default = 'hsv', help = "'bgr' or 'hsv' or 'lab'")
 args = parser.parse_args()
 
@@ -77,12 +78,12 @@ if args.input == 'video':
 elif args.input == 'image':
 	cap = cv2.imread(args.path)
 
-def Resize(img, pseudo_color, color_mask, img_threshold):
+def Resize(img, pseudo_color, color_mask, img_threshold, ratio):
 	
 	h, w = img.shape[:2]
 
-	small_h, small_w = h//2, w//2
-
+	small_h, small_w = h//int(ratio), w//int(ratio)
+	
 	img_resize = cv2.resize(img, (small_w, small_h))
 	pseudo_color_resize = cv2.resize(pseudo_color, (small_w, small_h))
 	color_mask_resize = cv2.resize(color_mask, (small_w, small_h))
@@ -124,7 +125,7 @@ while True:
 
 	res = cv2.bitwise_and(frame, frame, mask = frame_threshold)
 
-	frame_resize, frame_HSV_resize, res_resize, frame_threshold_resize = Resize(frame, frame_HSV, res, rgb_frame_threshold)
+	frame_resize, frame_HSV_resize, res_resize, frame_threshold_resize = Resize(frame, frame_HSV, res, rgb_frame_threshold, args.ratio)
 
 	combine = np.vstack((np.hstack((frame_resize,frame_HSV_resize)), np.hstack((res_resize ,frame_threshold_resize))))
 	# cv2.imshow(window_capture_name, frame_resize)
